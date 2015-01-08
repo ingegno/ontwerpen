@@ -1,0 +1,29 @@
+Hoe laseren:
+
+Penrose-driehoek
+================
+Veelkleurige
+1. Open Penrose-driehoek.svg
+2. Print naar lasercutter
+3. Doe move to -10  -3.5
+4. Leg plaatje van 50x25mm in de mal, de mal top rechts
+5. Raster Engrave -> halftone dither ; Start
+6. Vector cut:
+    * Pink en Yellow/Cyan: 0 passes
+    * black: order 1, speed 100, power 10 (mdf 3mm) 5 (triplex 3mm)
+7. Draai het plaatje om in de mal
+8. Open Penrose-driehoek_back.svg en druk naar lasercutter
+9. herhaal 5.
+10. Vector cut, maar nu ook gele lijn snijden:
+    * Pink/Cyan: 0 passes
+    * black: order 1, speed 100, power 10  (mdf 3mm) 5 (triplex 3mm)
+    * yellow: order 2 speed 30 (mdf) 50 (triplex), power 100 
+
+Enkel contour:
+Laat raster engrave weg!
+
+
+Reutersvards_triangle Reutersvards_square and Reutersvards_cube and cube
+========================================
+As above but vector cut mdf zwart aan power 5
+
