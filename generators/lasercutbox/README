@@ -1,0 +1,5 @@
+Example usage:
+python generate_squarebox.py -W 40 -H 40 -D 20 -m 5 -t 3 -k 0.16 test
+
+for help:
+python generate_squarebox.py -h
