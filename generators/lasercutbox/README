@@ -1,5 +1,12 @@
 Example usage:
-python generate_squarebox.py -W 40 -H 40 -D 20 -m 5 -t 3 -k 0.16 test
 
-for help:
+ python generate_squarebox.py -W 40 -H 40 -D 20 -m 5 -t 3 -k 0.16 test
+
+where WxHxD are the box dimension (exterior), and -k indicates the kerf (= part
+cut out by the laserbeam, see eg http://blog.ponoko.com/2008/09/11/how-much-material-does-the-laser-burn-away/ for some typical values.
+
+If a flat top (or bottom), add the -o flag for an open box
+ python generate_squarebox.py -W 40 -H 40 -D 20 -m 5 -t 3 -k 0.16 -o test
+
+for more help:
 python generate_squarebox.py -h

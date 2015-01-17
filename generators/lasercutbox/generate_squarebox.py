@@ -19,6 +19,8 @@ parser = argparse.ArgumentParser(description='Output svg of a box for lasercutti
 parser.add_argument('filename', help='filename of output svg image')
 parser.add_argument('-i', '--info', action='store_true',
                     help="show information")
+parser.add_argument('-o', '--openlid', action='store_true',
+                    help="Create an box with no lid, so open at top")
 parser.add_argument('-W', '--width', help="Width of the box in mm. Default 100mm")
 parser.add_argument('-H', '--heigth', help="Height of the box in mm. Default 100mm")
 parser.add_argument('-D', '--depth', help="Depth of the box in mm. Default 50mm")
@@ -35,6 +37,9 @@ inputdata = parser.parse_args() #parse arg from sys.argv
 
 outfilename = inputdata.filename
 info = inputdata.info
+openlid = inputdata.openlid
+if not openlid:
+    openlid = 0
 
 def set_default(value, default):
     if value is None:
@@ -97,15 +102,34 @@ def PolyPoint(x, y, first=False):
 def PolyEnd():
     return "\" fill=\"none\" stroke=\"black\" stroke-width=\"3\" />\r\n"
 
+def PathStart(x,y):
+    outp = """<path
+       style="fill:none;stroke:#000000;stroke-width:1.06200004;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0"
+       d="m %f,%f """ % (x,y)
+    return outp
+
+def PathEnd():
+    return """z"
+       id="rect2985"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccc" />
+"""
+
+def PathMove(dx, dy):
+    return " %f,%f " % (dx, dy)
+
 #one of 4 size
 def side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width, div_x, div_y,
-         invertX, invertY, xm=1,ym=0):
-    outp = ""
-    outp += PolyPoint(x,y)
-    x += corner_sizex*xm
-    y += corner_sizey*ym
-    if invertX: x-=thick*xm
-    if invertY: y-=thick*ym
+         invertX, invertY, xm=1,ym=0, openlid=False):
+    outp = ""    
+    if openlid:
+        miter = 0
+    else:
+        miter = 1
+    dx = corner_sizex*xm
+    dy = corner_sizey*ym
+    if invertX: dx-=thick*xm
+    if invertY: dy-=thick*ym
     half_cut = cut_width/2 * (xm+ym)
     if invertY and xm: 
         half_cut = -half_cut
@@ -114,11 +138,11 @@ def side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width, div_x, div_y,
     d = xm-ym
     if invertY and xm: d = -d
     if invertX and ym: d = -d
-    outp += PolyPoint(x+half_cut*abs(xm),y+half_cut*abs(ym))
-    y += thick *d *abs(xm)
-    x += thick *d *abs(ym)
+    outp += PathMove(dx+half_cut*abs(xm),dy+half_cut*abs(ym))
+    dy = thick *d *abs(xm) *miter
+    dx = thick *d *abs(ym) *miter
     d = -d;
-    outp += PolyPoint(x+half_cut*abs(xm),y+half_cut*abs(ym))
+    outp += PathMove(dx,dy)
     half_cut = -half_cut
 
     # All but the center one
@@ -129,39 +153,39 @@ def side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width, div_x, div_y,
     by = h-2*corner_sizey-ay*(2*div_y)
 
     for i in range(0,abs(div_x*xm+div_y*ym)):
-        x += ax*xm
-        y += ay*ym
-        outp += PolyPoint(x+half_cut*abs(xm),y+half_cut*abs(ym))
-        y += thick *d*abs(xm)
-        x += thick *d*abs(ym)
+        dx = ax*xm
+        dy = ay*ym
+        outp += PathMove(dx+half_cut*abs(xm),dy+half_cut*abs(ym))
+        dy = thick *d*abs(xm) *miter
+        dx = thick *d*abs(ym) *miter
         d = -d
-        outp += PolyPoint(x+half_cut*abs(xm),y+half_cut*abs(ym))
+        outp += PolyPoint(dx,dy)
         half_cut = -half_cut
 
-    x+= bx*xm;
-    y+= by*ym;
-    outp += PolyPoint(x+half_cut*abs(xm),y+half_cut*abs(ym))
-    y += thick *d*abs(xm)
-    x += thick *d*abs(ym)
+    dx = bx*xm;
+    dy = by*ym;
+    outp += PathMove(dx+half_cut*abs(xm), dy+half_cut*abs(ym))
+    dy = thick *d*abs(xm) *miter
+    dx = thick *d*abs(ym) *miter
     d = -d
-    outp += PolyPoint(x+half_cut*abs(xm),y+half_cut*abs(ym))
+    outp += PathMove(dx, dy)
     half_cut = -half_cut
 
     for i in range(0,abs(div_x*xm+div_y*ym)):
-        x += ax*xm
-        y += ay*ym
-        outp += PolyPoint(x+half_cut*abs(xm),y+half_cut*abs(ym))
-        y += thick *d*abs(xm)
-        x += thick *d*abs(ym)
+        dx = ax*xm
+        dy = ay*ym
+        outp += PolyPoint(dx+half_cut*abs(xm), dy+half_cut*abs(ym))
+        dy = thick *d*abs(xm) *miter
+        dx = thick *d*abs(ym) *miter
         d = -d
-        outp += PolyPoint(x+half_cut*abs(xm),y+half_cut*abs(ym))
+        outp += PathMove(dx, dy)
         half_cut = -half_cut
 
-    x += corner_sizex*xm
-    y += corner_sizey*ym
-    if invertX and xm: x -= thick * xm
-    if invertY and ym: y -= thick * ym
-    outp += PolyPoint(x,y)
+    dx = corner_sizex*xm
+    dy = corner_sizey*ym
+    if invertX and xm: dx -= thick * xm
+    if invertY and ym: dy -= thick * ym
+    outp += PathMove(dx, dy)
     return outp, x, y
 
 
@@ -172,7 +196,7 @@ def side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width, div_x, div_y,
 # thick: thickness of material
 # invert: invert in x or y direction the logic
 #********
-def squareframe(x, y, w, h, nrmiterw, nrmiterh, thick, invertX, invertY):
+def squareframe(x, y, w, h, nrmiterw, nrmiterh, thick, invertX, invertY, openlid=0):
     outp = ""
     div_x = int((nrmiterw-3) / 2)
     div_y = int((nrmiterh-3) / 2)
@@ -186,38 +210,46 @@ def squareframe(x, y, w, h, nrmiterw, nrmiterh, thick, invertX, invertY):
     if invertX: x+=thick
     y = y-h/2
     if invertY: y+=thick
-    outp += PolyStart()    
-    outp += PolyPoint(x,y,True)
+    outp += PathStart(x,y)
     #top side
-    dat, x, y = side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width,div_x,div_y, invertX, invertY, 1, 0)
+    dat, x, y = side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width,
+                     div_x,div_y, invertX, invertY, 1, 0, openlid==1)
     outp += dat
     #Right Side
-    dat, x, y = side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width,div_x,div_y, invertX, invertY, 0, 1)
+    dat, x, y = side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width,
+                     div_x,div_y, invertX, invertY, 0, 1, openlid==2)
     outp += dat
     # bottom Side
-    dat, x, y = side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width,div_x,div_y, invertX, invertY, -1, 0)
+    dat, x, y = side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width,
+                     div_x,div_y, invertX, invertY, -1, 0, openlid==3)
     outp += dat
     # Left side
-    dat, x, y = side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width,div_x,div_y, invertX, invertY, 0, -1)
+    dat, x, y = side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width,
+                     div_x,div_y, invertX, invertY, 0, -1, openlid==4)
     outp += dat
-    outp += PolyEnd()
+    outp += PathEnd()
     return outp
 
 
 svgfile = StartDoc(2*(5 + width + 5+ depth), 5+heigth+5+depth)
 svgfile += squareframe(5+width/2, 5+heigth/2, width, heigth, nrmiterw, nrmiterh,
                        thick, False, False)
+if openlid: openlid = 2 #right side
 svgfile += squareframe(5+width+5+depth/2, 5+heigth/2, depth, heigth, nrmiterd, nrmiterh,
-                       thick, True, False)
+                       thick, True, False, openlid)
+if openlid: openlid = 3 #bottom side
 svgfile += squareframe(5+width/2, 5+heigth+5+depth/2, width, depth, nrmiterw, nrmiterd,
-                       thick, True, True)
+                       thick, True, True, openlid)
 #repeat again
-svgfile += squareframe(5+width+5+depth+5+width/2, 5+heigth/2, width, heigth, nrmiterw, nrmiterh,
-                       thick, False, False)
+if not openlid:
+    svgfile += squareframe(5+width+5+depth+5+width/2, 5+heigth/2, width, heigth, nrmiterw, nrmiterh,
+                           thick, False, False)
+if openlid: openlid = 4
 svgfile += squareframe(5+width+5+depth+5+width+5+depth/2, 5+heigth/2, depth, heigth, nrmiterd, nrmiterh,
-                       thick, True, False)
+                       thick, True, False, openlid)
+if openlid: openlid = 1
 svgfile += squareframe(5+width+5+width/2, 5+heigth+5+depth/2, width, depth, nrmiterw, nrmiterd,
-                       thick, True, True)
+                       thick, True, True, openlid)
 svgfile += EndDoc()
 #write out scad file
 if not outfilename[-4:] == ".svg":
