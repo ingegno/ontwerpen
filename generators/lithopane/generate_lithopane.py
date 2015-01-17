@@ -98,6 +98,7 @@ number_of_layers = 12;
 // png height map is 100 high, we map this to 0-1, and the height we want.
 height = layer_height*number_of_layers/100;
 
+include_frame = "no"; // [yes, no]
 include_hole = "no"; // [yes, no]
 hole_diameter = 10;
 
@@ -107,34 +108,39 @@ hole_diameter = 10;
 min_layer_height = layer_height*2;
 hole_radius = hole_diameter/2;
 
-lithopane(length, width, x_scale, y_scale);
+lithopane(heigth, width, x_scale, y_scale);
 
-module lithopane(length, width, x_scale, y_scale) {
-  union() {
-    // take just the part of surface we want
-    difference() {
-      translate([0, 0, min_layer_height]) scale([x_scale,y_scale,height]) surface(file=image_file, center=true, convexity=5);
-      translate([0,0,-(height+min_layer_height)]) linear_extrude(height=height+min_layer_height) square([length, width], center=true);
-    }
-    linear_extrude(height=layer_height*2) square([length+4, width+4], center=true);
+module lithopane(heigth, width, x_scale, y_scale) {
+    union() {
+        // take just the part of surface we want
+        //difference() {
+            translate([0, 0, min_layer_height]) scale([x_scale,y_scale,height]) surface(file=image_file, center=true, convexity=5);
+       //     //cut off everything under 0
+       //     translate([0,0,-(height+min_layer_height)]) linear_extrude(height=height+min_layer_height) square([width, heigth], center=true);
+       // }
+        //add a solid base of 2 layers high and extra 4 mm
+        linear_extrude(height=layer_height*2) square([width+4, heigth+4], center=true);
 
-    linear_extrude(height=height+min_layer_height) {
-  	  difference() {
-  		  union() {
-  	      square([length+4, width+4], center=true);
-  	      if (include_hole == "yes") {
-            translate([0, width/2+hole_radius+2, 0]) circle(r=hole_radius+5);
-          }
-  		  }
-        union() {
-          square([length, width], center=true);
-  	      if (include_hole == "yes") {
-            translate([0, width/2+hole_radius+2, 0]) circle(r=hole_radius);
-          }
+        //add a more solid frame
+        if (include_frame == "yes") {
+            linear_extrude(height=height+min_layer_height) {
+                difference() {
+                    union() {
+                        square([width+4, heigth+4], center=true);
+                        if (include_hole == "yes") {
+                            translate([0, heigth/2+hole_radius+2, 0]) circle(r=hole_radius+5);
+                        }
+                    }
+                    union() {
+                        square([width, heigth], center=true);
+                        if (include_hole == "yes") {
+                            translate([0, heigth/2+hole_radius+2, 0]) circle(r=hole_radius);
+                        }
+                    }
+                }
+            }
         }
-  	  }
     }
- }
 }
 """ % {'width': width, 'height': heightpximg/widthpximg*width,
        'scale': width/widthpx}
