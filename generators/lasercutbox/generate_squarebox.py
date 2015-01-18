@@ -31,6 +31,12 @@ parser.add_argument('-t', '--thickness', help="Thickness of material in mm. Defa
 parser.add_argument('-k', '--kerf', help="Kerf of laserbeam (width of the cut) in mm."
                                          " See http://blog.ponoko.com/2008/09/11/how-much-material-does-the-laser-burn-away/. "
                                          "Default 0.16mm")
+parser.add_argument('--recthole1', help="Add rectangular hole rw,rh in side 1")
+parser.add_argument('--recthole2', help="Add rectangular hole rw,rh in side 2")
+parser.add_argument('--recthole3', help="Add rectangular hole rw,rh in side 3")
+parser.add_argument('--recthole4', help="Add rectangular hole rw,rh in side 4")
+parser.add_argument('--recthole5', help="Add rectangular hole rw,rh in side 5")
+parser.add_argument('--recthole6', help="Add rectangular hole rw,rh in side 6")
 
 inputdata = parser.parse_args() #parse arg from sys.argv
 
@@ -40,7 +46,16 @@ info = inputdata.info
 openlid = inputdata.openlid
 if not openlid:
     openlid = 0
+rectholes = [None] * 6
+rh2w =  [None] * 6
+rh2h =  [None] * 6
+for i in range(0,6): 
+    rectholes[i] = getattr(inputdata, "recthole"+str(i+1))
+    if rectholes[i] is not None:
+        rh2w[i] = float(rectholes[i].split(',')[0])
+        rh2h[i] = float(rectholes[i].split(',')[1])
 
+print (rectholes, rh2w, rh2h)
 def set_default(value, default):
     if value is None:
         return default
@@ -119,7 +134,7 @@ def PathMove(dx, dy):
     return " %f,%f " % (dx, dy)
 
 #one of 4 size
-def side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width, div_x, div_y,
+def side(w,h,corner_sizex,corner_sizey,thick,cut_width, div_x, div_y,
          invertX, invertY, xm=1,ym=0, openlid=False):
     outp = ""    
     if openlid:
@@ -186,7 +201,7 @@ def side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width, div_x, div_y,
     if invertX and xm: dx -= thick * xm
     if invertY and ym: dy -= thick * ym
     outp += PathMove(dx, dy)
-    return outp, x, y
+    return outp
 
 
 #********
@@ -212,44 +227,96 @@ def squareframe(x, y, w, h, nrmiterw, nrmiterh, thick, invertX, invertY, openlid
     if invertY: y+=thick
     outp += PathStart(x,y)
     #top side
-    dat, x, y = side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width,
+    dat = side(w,h,corner_sizex,corner_sizey,thick,cut_width,
                      div_x,div_y, invertX, invertY, 1, 0, openlid==1)
     outp += dat
     #Right Side
-    dat, x, y = side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width,
+    dat = side(w,h,corner_sizex,corner_sizey,thick,cut_width,
                      div_x,div_y, invertX, invertY, 0, 1, openlid==2)
     outp += dat
     # bottom Side
-    dat, x, y = side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width,
+    dat = side(w,h,corner_sizex,corner_sizey,thick,cut_width,
                      div_x,div_y, invertX, invertY, -1, 0, openlid==3)
     outp += dat
     # Left side
-    dat, x, y = side(x,y,w,h,corner_sizex,corner_sizey,thick,cut_width,
+    dat = side(w,h,corner_sizex,corner_sizey,thick,cut_width,
                      div_x,div_y, invertX, invertY, 0, -1, openlid==4)
     outp += dat
     outp += PathEnd()
     return outp
 
 
+def squarehole(x, y, w, h, w_hole, h_hole):
+    outp = ""
+    #convert to 1/10th mm 
+    x = 10*x; y=10*y; w=10*w; h=10*h;w_hole=10*w_hole;h_hole=10*h_hole
+    x = x-w_hole/2
+    y = y-h_hole/2
+    outp += PathStart(x,y)
+    outp += PathMove(w_hole, 0)
+    outp += PathMove(0, h_hole)
+    outp += PathMove(-w_hole, 0)
+    outp += PathEnd()
+    return outp
+
+
 svgfile = StartDoc(2*(5 + width + 5+ depth), 5+heigth+5+depth)
-svgfile += squareframe(5+width/2, 5+heigth/2, width, heigth, nrmiterw, nrmiterh,
+sidenr = 0
+startx, starty = 5+width/2, 5+heigth/2
+svgfile += squareframe(startx, starty, width, heigth, nrmiterw, nrmiterh,
                        thick, False, False)
+if rectholes[sidenr]:
+    #a square hole in this side
+    svgfile += squarehole(startx, starty, width, heigth, rh2h[sidenr], rh2w[sidenr])
+
+sidenr += 1
 if openlid: openlid = 2 #right side
-svgfile += squareframe(5+width+5+depth/2, 5+heigth/2, depth, heigth, nrmiterd, nrmiterh,
+startx, starty = 5+width+5+depth/2, 5+heigth/2
+svgfile += squareframe(startx, starty, depth, heigth, nrmiterd, nrmiterh,
                        thick, True, False, openlid)
+if rectholes[sidenr]:
+    #a square hole in this side
+    svgfile += squarehole(startx, starty, depth, heigth, rh2h[sidenr], rh2w[sidenr])
+sidenr += 1
+
 if openlid: openlid = 3 #bottom side
-svgfile += squareframe(5+width/2, 5+heigth+5+depth/2, width, depth, nrmiterw, nrmiterd,
+startx, starty = 5+width/2, 5+heigth+5+depth/2
+svgfile += squareframe(startx, starty, width, depth, nrmiterw, nrmiterd,
                        thick, True, True, openlid)
+if rectholes[sidenr]:
+    #a square hole in this side
+    svgfile += squarehole(startx, starty, eidth, depth, rh2h[sidenr], rh2w[sidenr])
+sidenr += 1
+
 #repeat again
+startx, starty = 5+width+5+depth+5+width/2, 5+heigth/2
 if not openlid:
-    svgfile += squareframe(5+width+5+depth+5+width/2, 5+heigth/2, width, heigth, nrmiterw, nrmiterh,
+    svgfile += squareframe(startx, starty, width, heigth, nrmiterw, nrmiterh,
                            thick, False, False)
+    if rectholes[sidenr]:
+        #a square hole in this side
+        svgfile += squarehole(startx, starty, width, heigth, rh2h[sidenr], rh2w[sidenr])
+sidenr += 1
+
 if openlid: openlid = 4
-svgfile += squareframe(5+width+5+depth+5+width+5+depth/2, 5+heigth/2, depth, heigth, nrmiterd, nrmiterh,
+startx, starty = 5+width+5+depth+5+width+5+depth/2, 5+heigth/2
+svgfile += squareframe(startx, starty, depth, heigth, nrmiterd, nrmiterh,
                        thick, True, False, openlid)
+print (rectholes[sidenr])
+if rectholes[sidenr]:
+    #a square hole in this side
+    svgfile += squarehole(startx, starty, depth, heigth, rh2h[sidenr], rh2w[sidenr])
+sidenr += 1
+
 if openlid: openlid = 1
-svgfile += squareframe(5+width+5+width/2, 5+heigth+5+depth/2, width, depth, nrmiterw, nrmiterd,
+startx, starty = 5+width+5+width/2, 5+heigth+5+depth/2
+svgfile += squareframe(startx, starty, width, depth, nrmiterw, nrmiterd,
                        thick, True, True, openlid)
+if rectholes[sidenr]:
+    #a square hole in this side
+    svgfile += squarehole(startx, starty, width, depth, rh2h[sidenr], rh2w[sidenr])
+sidenr += 1
+
 svgfile += EndDoc()
 #write out scad file
 if not outfilename[-4:] == ".svg":
