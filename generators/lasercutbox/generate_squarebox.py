@@ -55,7 +55,6 @@ for i in range(0,6):
         rh2w[i] = float(rectholes[i].split(',')[0])
         rh2h[i] = float(rectholes[i].split(',')[1])
 
-print (rectholes, rh2w, rh2h)
 def set_default(value, default):
     if value is None:
         return default
@@ -68,13 +67,17 @@ def set_default(value, default):
 
 svgfile = ""
 
+#**********
+# Start an svg. Dimensions are given in mm.
+#**********
 def StartDoc(widthsvg, heigthsvg):
-    wcm = widthsvg *1.01 / 10
-    hcm = heigthsvg *1.01 / 10
+    wcm = widthsvg / 10
+    hcm = heigthsvg / 10
     svgfile = "<?xml version=\"1.0\" standalone=\"no\"?>\r\n"
     svgfile += "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\r\n"
-    svgfile += "<svg width=\"%icm\" height=\"%icm\" viewBox=\"0 0 %i %i\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\r\n" \
-                %  (int(wcm), int(hcm), int(widthsvg*10), int(heigthsvg*10) )
+    #output in cm. For user coordinates we use 1/10th mm as unit.
+    svgfile += "<svg width=\"%fcm\" height=\"%fcm\" viewBox=\"0 0 %i %i\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\r\n" \
+                %  (int(wcm*100)/100, int(hcm*100)/100, int(widthsvg*10), int(heigthsvg*10) )
     return svgfile
 
 def EndDoc():
@@ -302,7 +305,7 @@ if openlid: openlid = 4
 startx, starty = 5+width+5+depth+5+width+5+depth/2, 5+heigth/2
 svgfile += squareframe(startx, starty, depth, heigth, nrmiterd, nrmiterh,
                        thick, True, False, openlid)
-print (rectholes[sidenr])
+
 if rectholes[sidenr]:
     #a square hole in this side
     svgfile += squarehole(startx, starty, depth, heigth, rh2h[sidenr], rh2w[sidenr])
