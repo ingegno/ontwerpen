@@ -57,7 +57,10 @@ with Image(filename=imgfilename) as img:
     scaling = widthpx / widthpximg
 if info:
     sys.exit(0)
-    
+
+#derived value
+height = heightpximg/widthpximg*width
+
 #with Image(filename=imgfilename) as img:
 #    # print the size first  
 #    #resize with this scaling
@@ -108,33 +111,33 @@ hole_diameter = 10;
 min_layer_height = layer_height*2;
 hole_radius = hole_diameter/2;
 
-lithopane(heigth, width, x_scale, y_scale);
+lithopane(height, width, x_scale, y_scale);
 
-module lithopane(heigth, width, x_scale, y_scale) {
+module lithopane(height, width, x_scale, y_scale) {
     union() {
         // take just the part of surface we want
         //difference() {
             translate([0, 0, min_layer_height]) scale([x_scale,y_scale,height]) surface(file=image_file, center=true, convexity=5);
        //     //cut off everything under 0
-       //     translate([0,0,-(height+min_layer_height)]) linear_extrude(height=height+min_layer_height) square([width, heigth], center=true);
+       //     translate([0,0,-(height+min_layer_height)]) linear_extrude(height=height+min_layer_height) square([width, height], center=true);
        // }
         //add a solid base of 2 layers high and extra 4 mm
-        linear_extrude(height=layer_height*2) square([width+4, heigth+4], center=true);
+        linear_extrude(height=layer_height*2) square([width+4, height+4], center=true);
 
         //add a more solid frame
         if (include_frame == "yes") {
             linear_extrude(height=height+min_layer_height) {
                 difference() {
                     union() {
-                        square([width+4, heigth+4], center=true);
+                        square([width+4, height+4], center=true);
                         if (include_hole == "yes") {
-                            translate([0, heigth/2+hole_radius+2, 0]) circle(r=hole_radius+5);
+                            translate([0, height/2+hole_radius+2, 0]) circle(r=hole_radius+5);
                         }
                     }
                     union() {
-                        square([width, heigth], center=true);
+                        square([width, height], center=true);
                         if (include_hole == "yes") {
-                            translate([0, heigth/2+hole_radius+2, 0]) circle(r=hole_radius);
+                            translate([0, height/2+hole_radius+2, 0]) circle(r=hole_radius);
                         }
                     }
                 }
@@ -142,13 +145,24 @@ module lithopane(heigth, width, x_scale, y_scale) {
         }
     }
 }
-""" % {'width': width, 'height': heightpximg/widthpximg*width,
+""" % {'width': width, 'height': height,
        'scale': width/widthpx}
 
 #write out scad file
 with open('lithopane.scad', 'w') as fscad:
     fscad.write(scadfile)
+print ("To generate a box for this lithopane on lasercutter with kerf 0.16mm in material of 3mm, use following command")
+print ("")
+print ("python generate_squarebox.py -W %(widthbox)f -H %(heightbox)f -D %(depthbox)f "
+        "-m 5 -t 3 -k 0.16 -o --recthole2 %(width)f,%(height)f lithobox" % {
+            'widthbox'  : 20,    # 2cm 
+            'heightbox' : width + 15,
+            'depthbox'  : height + 15,
+            'width'     : width,
+            'height'    : height,
+            })
 
+print ("")
 #call scad
 print ("Starting openscad stl generation. This can take a while!")
 returnid = subprocess.call(["/home/benny/git/openscad/openscad", '-o', 'lithopane.stl', 'lithopane.scad'])
