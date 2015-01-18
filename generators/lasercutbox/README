@@ -8,5 +8,9 @@ cut out by the laserbeam, see eg http://blog.ponoko.com/2008/09/11/how-much-mate
 If a flat top (or bottom), add the -o flag for an open box
  python generate_squarebox.py -W 40 -H 40 -D 20 -m 5 -t 3 -k 0.16 -o test
 
+If side two requires a picture frame, then use recthole2 parameter:
+
+ python generate_squarebox.py -W 20 -H 50 -D 50 -m 5 -t 3 -k 0.16 -o --recthole2 30,20 test
+
 for more help:
 python generate_squarebox.py -h
